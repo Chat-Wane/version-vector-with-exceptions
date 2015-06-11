@@ -20,8 +20,8 @@
         "sorted-cmp-array"
     ],
     "devDependencies": {
-        "expect.js":  "0.2.x",
-        "mocha":  "1.17.x"
+        "expect.js":  "0.3.x",
+        "mocha":  "2.2.x"
     },
     "scripts":{
         "debug": "browserify -r ./lib/vvwe.js:version-vector-with-exceptions --debug > build/version-vector-with-exceptions.bundle.debug.js",
