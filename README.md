@@ -4,10 +4,14 @@
 
 This project provides a version vector with exceptions (VVwE) [1].
 
-## Installation (NOT released yet)
+## Installation
 
 ```
 $ npm install version-vector-with-exceptions
+```
+or
+```
+$ bower install version-vector-with-exceptions
 ```
 
 ## Usage
