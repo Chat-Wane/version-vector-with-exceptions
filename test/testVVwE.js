@@ -109,5 +109,76 @@ describe('vvwe.js', function() {
             expect(vvwe.isLower(c)).to.be.ok();
         });
     });
-    
+
+    describe('clone', function(){
+        it('produce two identical independant copies of the vvwe', function(){
+            var vvwe = new VVwE(42);
+            var vvwe2 = new VVwE(13);
+            vvwe.increment();
+            vvwe.incrementFrom(vvwe2.increment());
+            var vvwe3 = vvwe.clone();
+            vvwe3.increment();
+            vvwe3.incrementFrom(vvwe2.increment());
+            expect(vvwe3.local.e).to.be.eql(vvwe.local.e);
+            expect(vvwe3.local.v).to.be.eql(vvwe.local.v+1);
+            expect(vvwe3.vector.arr.length).to.be.eql(vvwe.vector.arr.length);
+            expect(vvwe3.vector.arr[0].v).to.be.eql(vvwe.vector.arr[0].v+1);
+        });
+    });
+
+    describe('merge', function(){
+        it('merge two structures', function(){
+            var vvwe = new VVwE(42);
+            var vvwe2 = new VVwE(13);
+            vvwe2.increment();
+            vvwe2.increment();
+            vvwe.merge(vvwe2);
+            expect(vvwe.vector.arr[0].v).to.be.eql(2);
+            vvwe2.increment();
+            expect(vvwe.vector.arr[0].v).to.be.eql(2);
+        });
+
+        it('merge two structure taking care of exception of initiator', function(){
+            var vvwe = new VVwE(42);
+            var vvwe2 = new VVwE(13);
+            vvwe2.increment();
+            vvwe.incrementFrom(vvwe2.increment());
+            expect(vvwe.vector.arr[0].x.length).to.be.eql(1);
+            vvwe.merge(vvwe2);
+            expect(vvwe.vector.arr[0].x.length).to.be.eql(0);
+        });
+
+        it('keeps the exception of the vvwe in argument', function(){
+            var vvwe = new VVwE(42);
+            var vvwe2 = new VVwE(13);
+            var vvwe3 = new VVwE(37);
+            vvwe2.increment();
+            vvwe.incrementFrom(vvwe2.increment()); // 42 -> x 1
+            vvwe3.incrementFrom(vvwe2.increment()); // 37 -> x 1 2
+            vvwe.merge(vvwe3);
+            expect(vvwe.vector.arr[0].x.length).to.be.eql(1);
+            expect(vvwe3.vector.arr[0].x.length).to.be.eql(2);
+            vvwe3.merge(vvwe);
+            expect(vvwe3.vector.arr[0].x.length).to.be.eql(1);
+            vvwe3.merge(vvwe2);
+            expect(vvwe3.vector.arr[0].x.length).to.be.eql(0);
+        });
+
+        it('get new exceptions if the vvwe in arg is more uptodate',function(){
+            var vvwe = new VVwE(42);
+            var vvwe2 = new VVwE(13);
+            var vvwe3 = new VVwE(37);
+            vvwe3.incrementFrom(vvwe2.increment());
+            vvwe3.incrementFrom(vvwe2.increment());
+            vvwe.merge(vvwe2);
+            expect(vvwe.vector.arr[0].v).to.be.eql(2);
+            vvwe3.incrementFrom(vvwe2.increment());
+            vvwe2.increment();
+            vvwe2.increment();
+            vvwe3.incrementFrom(vvwe2.increment());
+            vvwe.merge(vvwe3);
+            expect(vvwe.vector.arr[0].v).to.be.eql(6);
+            expect(vvwe.vector.arr[0].x.length).to.be.eql(2);
+        });
+    });
 });
