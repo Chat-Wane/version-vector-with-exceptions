@@ -1,6 +1,6 @@
 {
     "name": "version-vector-with-exceptions",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "main": "./build/version-vector-with-exceptions.bundle.js",
     "ignore": [
         "**/*.js",
