@@ -1,6 +1,6 @@
 {
     "name": "version-vector-with-exceptions",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "author": "Chat-Wane <grumpy.chat.wane@gmail.com>",
     "description": "vectors for causality tracking allowing exceptions",
     "main": "./lib/vvwe.js",
