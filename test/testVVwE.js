@@ -180,5 +180,15 @@ describe('vvwe.js', function() {
             expect(vvwe.vector.arr[0].v).to.be.eql(6);
             expect(vvwe.vector.arr[0].x.length).to.be.eql(2);
         });
+
+        it('test a bug example from the CRATE project', function(){
+            var vvwe = new VVwE("6e3bedf4-45f9-4e05-ba55-7c4f99b28c44");
+            var vvwe2 = new VVwE("f065d3ab-b5b5-4376-9bd5-25ee5db22313");
+            for (var i = 0; i < 100; ++i) {
+                vvwe.incrementFrom(vvwe2.increment());
+            };
+            vvwe.merge(vvwe2);
+            expect(vvwe.local.v).to.be.eql(0);
+        });
     });
 });
