@@ -190,5 +190,16 @@ describe('vvwe.js', function() {
             vvwe.merge(vvwe2);
             expect(vvwe.local.v).to.be.eql(0);
         });
+        
+        it('test another bug example from the CRATE project', function(){
+            var vvwe = new VVwE("72f8de1f-ade1-4e89-b5f4-1447902db2de");
+            var vvwe2 = new VVwE("b0d3e97a-4aee-489a-987f-fb74b9fd929d");
+            for (var i = 0; i < 8; ++i) {
+                vvwe.incrementFrom(vvwe2.increment());
+            };
+            vvwe.merge(vvwe2);
+            expect(vvwe.local.v).to.be.eql(0);
+        });
+
     });
 });
