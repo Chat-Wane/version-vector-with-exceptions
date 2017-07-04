@@ -1,0 +1,1403 @@
+[
+  {
+    "__docId__": 0,
+    "kind": "file",
+    "name": "lib/pair.js",
+    "content": "'use strict';\n\n/**\n * Pair that encapsulates the result of an increment in the array.\n */\nclass Pair {\n    /**\n     * @param {Object} entry The entry incremented.\n     * @param {Number} counter The counter associated to that entry.\n     */\n    constructor (entry, counter) {\n        this.e = entry;\n        this.c = counter;\n    };\n    \n};\n\nmodule.exports = Pair;\n",
+    "static": true,
+    "longname": "lib/pair.js",
+    "access": null,
+    "description": null,
+    "lineNumber": 1
+  },
+  {
+    "__docId__": 1,
+    "kind": "class",
+    "name": "Pair",
+    "memberof": "lib/pair.js",
+    "static": true,
+    "longname": "lib/pair.js~Pair",
+    "access": null,
+    "export": true,
+    "importPath": "version-vector-with-exceptions/lib/pair.js",
+    "importStyle": "Pair",
+    "description": "Pair that encapsulates the result of an increment in the array.",
+    "lineNumber": 6,
+    "interface": false
+  },
+  {
+    "__docId__": 2,
+    "kind": "constructor",
+    "name": "constructor",
+    "memberof": "lib/pair.js~Pair",
+    "generator": false,
+    "async": false,
+    "static": false,
+    "longname": "lib/pair.js~Pair#constructor",
+    "access": null,
+    "description": "",
+    "lineNumber": 11,
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "Object"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "entry",
+        "description": "The entry incremented."
+      },
+      {
+        "nullable": null,
+        "types": [
+          "Number"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "counter",
+        "description": "The counter associated to that entry."
+      }
+    ]
+  },
+  {
+    "__docId__": 3,
+    "kind": "member",
+    "name": "e",
+    "memberof": "lib/pair.js~Pair",
+    "static": false,
+    "longname": "lib/pair.js~Pair#e",
+    "access": null,
+    "description": null,
+    "lineNumber": 12,
+    "undocument": true,
+    "unknown": [
+      {
+        "tagName": "@_undocument",
+        "tagValue": ""
+      }
+    ],
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 4,
+    "kind": "member",
+    "name": "c",
+    "memberof": "lib/pair.js~Pair",
+    "static": false,
+    "longname": "lib/pair.js~Pair#c",
+    "access": null,
+    "description": null,
+    "lineNumber": 13,
+    "undocument": true,
+    "unknown": [
+      {
+        "tagName": "@_undocument",
+        "tagValue": ""
+      }
+    ],
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 5,
+    "kind": "file",
+    "name": "lib/vvwe.js",
+    "content": "'use strict';\n\nconst SortedArray = require('sorted-cmp-array');\nconst VVwEEntry = require('./vvweentry.js');\nconst Pair = require('./pair.js');\n\n/**\n * Version vector with exceptions.\n */\nclass VVwE {\n    /**\n     * @param {Object} e The entry chosen by the local site. One entry per site.\n     */\n    constructor(e) {\n        this.local = new VVwEEntry(e);\n        this.vector = new SortedArray(VVwEEntry.comparator);\n        this.vector.insert(this.local);\n    };\n\n    /**\n     * Clone of this vvwe.\n     * @return {VVwE} A version vector with exceptions containing the same\n     * entry; clock; exceptions triples.\n     */\n    clone () {\n        const cloneVVwE = new VVwE(this.local.e);\n        for (let i = 0; i < this.vector.arr.length; ++i) {\n            cloneVVwE.vector.arr[i] = new VVwEEntry(this.vector.arr[i].e);\n            cloneVVwE.vector.arr[i].v = this.vector.arr[i].v;\n            for (let j = 0; j < this.vector.arr[i].x.length; ++j) {\n                cloneVVwE.vector.arr[i].x.push(this.vector.arr[i].x[j]);\n            };\n            if (cloneVVwE.vector.arr[i].e === this.local.e) {\n                cloneVVwE.local = cloneVVwE.vector.arr[i];\n            };\n        };\n        return cloneVVwE;\n    };\n\n    /**\n     * Get a version vector with exceptions using a JSON.\n     * @return {VVwE} The version vector with exceptions extracted from the\n     * JSON in argument.\n     */\n    static fromJSON (object) {\n        const vvwe = new VVwE(object.local.e);\n        for (let i = 0; i < object.vector.arr.length; ++i) {\n            vvwe.vector.arr[i] = new VVwEEntry(object.vector.arr[i].e);\n            vvwe.vector.arr[i].v = object.vector.arr[i].v;\n            for (let j = 0; j < object.vector.arr[i].x.length; ++j) {\n                vvwe.vector.arr[i].x.push(object.vector.arr[i].x[j]);\n            };\n            if (object.vector.arr[i].e === object.local.e) {\n                vvwe.local = vvwe.vector.arr[i];\n            };\n        };\n        return vvwe;\n    };\n    \n    /**\n     * Increment the entry of the vector on local update.\n     * @return {Pair} A pair that uniquely identifies the operation.\n     */\n    increment () {\n        this.local.increment();\n        return new Pair(this.local.e, this.local.v); \n    };\n\n\n    /**\n     * Increment from a remote operation.\n     * @param {Pair} ec The entry and clock of the received event to add\n     * supposedly ready.\n     */\n    incrementFrom (ec) {\n        // #0 find the entry within the array of VVwEntries\n        const index = this.vector.indexOf(ec.e);\n        if (index < 0) {\n            // #1 if the entry does not exist, initialize and increment\n            this.vector.insert(new VVwEEntry(ec.e));\n            this.vector.arr[this.vector.indexOf(ec.e)].incrementFrom(ec.c);\n        } else {\n            // #2 otherwise, only increment\n            this.vector.arr[index].incrementFrom(ec.c);\n        };\n    };\n    \n\n    /**\n     * Check if the argument are causally ready regards to this vector.  \n     * @param {Pair} ec The identifier, i.e., the site clock of the operation\n     * that happened-before the current event.\n     * @return {Boolean} true if the event is ready, i.e. the identifier has\n     * already been integrated to this vector; false otherwise.\n     */\n    isReady (ec) {\n        // #0 no ec, automatically ready\n        if (typeof ec === 'undefined' || ec === null) { return true; };\n        // #1 otherwise, check in the vector and exceptions\n        const index = this.vector.indexOf(ec.e);\n        return index >= 0 && ec.c <= this.vector.arr[index].v &&\n            this.vector.arr[index].x.indexOf(ec.c) < 0;\n    };\n\n    /**\n     * Check if the message contains information already delivered.\n     * @param {Pair} ec the site clock to check.\n     */\n    isLower (ec) {\n        return typeof ec !== 'undefined' && ec !== null && this.isReady(ec);\n    };\n    \n    /**\n     * Merges the version vector in argument with this.\n     * @param {VVwE} other the other version vector to merge with.\n     */\n    merge (other) {\n        for (let i = 0; i < other.vector.arr.length; ++i) {\n            let entry = other.vector.arr[i];\n            let index = this.vector.indexOf(entry);\n            if (index < 0) {\n                // #1 entry does not exist, fully copy it\n                let newEntry = new VVwEEntry(entry.e);\n                newEntry.v = entry.v;\n                for (let j = 0; j < entry.x.length; ++j){\n                    newEntry.x.push(entry.x[j]);\n                };\n                this.vector.insert(newEntry);\n            } else {\n                // #2 otherwise merge the entries\n                let currEntry = this.vector.arr[index];\n                // #2A remove the exception from our vector\n                let j = 0;\n                while (j < currEntry.x.length) {\n                    if (currEntry.x[j]<entry.v &&\n                        entry.x.indexOf(currEntry.x[j]) < 0) {\n                        currEntry.x.splice(j, 1);\n                    } else {\n                        ++j;\n                    };\n                };\n                // #2B add the new exceptions\n                j = 0;\n                while (j < entry.x.length) {\n                    if (entry.x[j] > currEntry.v &&\n                        currEntry.x.indexOf(entry.x[j]) < 0) {\n                        currEntry.x.push(entry.x[j]);\n                    };\n                    ++j;\n                };\n                currEntry.v = Math.max(currEntry.v, entry.v);\n            };\n        };\n    };\n    \n};\n\nmodule.exports = VVwE;\n\n",
+    "static": true,
+    "longname": "lib/vvwe.js",
+    "access": null,
+    "description": null,
+    "lineNumber": 1
+  },
+  {
+    "__docId__": 6,
+    "kind": "variable",
+    "name": "SortedArray",
+    "memberof": "lib/vvwe.js",
+    "static": true,
+    "longname": "lib/vvwe.js~SortedArray",
+    "access": null,
+    "export": false,
+    "importPath": "version-vector-with-exceptions",
+    "importStyle": null,
+    "description": null,
+    "lineNumber": 3,
+    "undocument": true,
+    "unknown": [
+      {
+        "tagName": "@_undocument",
+        "tagValue": ""
+      }
+    ],
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 7,
+    "kind": "variable",
+    "name": "VVwEEntry",
+    "memberof": "lib/vvwe.js",
+    "static": true,
+    "longname": "lib/vvwe.js~VVwEEntry",
+    "access": null,
+    "export": false,
+    "importPath": "version-vector-with-exceptions",
+    "importStyle": null,
+    "description": null,
+    "lineNumber": 4,
+    "undocument": true,
+    "unknown": [
+      {
+        "tagName": "@_undocument",
+        "tagValue": ""
+      }
+    ],
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 8,
+    "kind": "variable",
+    "name": "Pair",
+    "memberof": "lib/vvwe.js",
+    "static": true,
+    "longname": "lib/vvwe.js~Pair",
+    "access": null,
+    "export": false,
+    "importPath": "version-vector-with-exceptions",
+    "importStyle": null,
+    "description": null,
+    "lineNumber": 5,
+    "undocument": true,
+    "unknown": [
+      {
+        "tagName": "@_undocument",
+        "tagValue": ""
+      }
+    ],
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 9,
+    "kind": "class",
+    "name": "VVwE",
+    "memberof": "lib/vvwe.js",
+    "static": true,
+    "longname": "lib/vvwe.js~VVwE",
+    "access": null,
+    "export": true,
+    "importPath": "version-vector-with-exceptions",
+    "importStyle": "VVwE",
+    "description": "Version vector with exceptions.",
+    "lineNumber": 10,
+    "interface": false
+  },
+  {
+    "__docId__": 10,
+    "kind": "constructor",
+    "name": "constructor",
+    "memberof": "lib/vvwe.js~VVwE",
+    "generator": false,
+    "async": false,
+    "static": false,
+    "longname": "lib/vvwe.js~VVwE#constructor",
+    "access": null,
+    "description": "",
+    "lineNumber": 14,
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "Object"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "e",
+        "description": "The entry chosen by the local site. One entry per site."
+      }
+    ]
+  },
+  {
+    "__docId__": 11,
+    "kind": "member",
+    "name": "local",
+    "memberof": "lib/vvwe.js~VVwE",
+    "static": false,
+    "longname": "lib/vvwe.js~VVwE#local",
+    "access": null,
+    "description": null,
+    "lineNumber": 15,
+    "undocument": true,
+    "unknown": [
+      {
+        "tagName": "@_undocument",
+        "tagValue": ""
+      }
+    ],
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 12,
+    "kind": "member",
+    "name": "vector",
+    "memberof": "lib/vvwe.js~VVwE",
+    "static": false,
+    "longname": "lib/vvwe.js~VVwE#vector",
+    "access": null,
+    "description": null,
+    "lineNumber": 16,
+    "undocument": true,
+    "unknown": [
+      {
+        "tagName": "@_undocument",
+        "tagValue": ""
+      }
+    ],
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 13,
+    "kind": "method",
+    "name": "clone",
+    "memberof": "lib/vvwe.js~VVwE",
+    "generator": false,
+    "async": false,
+    "static": false,
+    "longname": "lib/vvwe.js~VVwE#clone",
+    "access": null,
+    "description": "Clone of this vvwe.",
+    "lineNumber": 25,
+    "params": [],
+    "return": {
+      "nullable": null,
+      "types": [
+        "VVwE"
+      ],
+      "spread": false,
+      "description": "A version vector with exceptions containing the same\nentry; clock; exceptions triples."
+    }
+  },
+  {
+    "__docId__": 14,
+    "kind": "method",
+    "name": "fromJSON",
+    "memberof": "lib/vvwe.js~VVwE",
+    "generator": false,
+    "async": false,
+    "static": true,
+    "longname": "lib/vvwe.js~VVwE.fromJSON",
+    "access": null,
+    "description": "Get a version vector with exceptions using a JSON.",
+    "lineNumber": 45,
+    "params": [
+      {
+        "name": "object",
+        "types": [
+          "*"
+        ]
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "VVwE"
+      ],
+      "spread": false,
+      "description": "The version vector with exceptions extracted from the\nJSON in argument."
+    }
+  },
+  {
+    "__docId__": 15,
+    "kind": "method",
+    "name": "increment",
+    "memberof": "lib/vvwe.js~VVwE",
+    "generator": false,
+    "async": false,
+    "static": false,
+    "longname": "lib/vvwe.js~VVwE#increment",
+    "access": null,
+    "description": "Increment the entry of the vector on local update.",
+    "lineNumber": 64,
+    "params": [],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Pair"
+      ],
+      "spread": false,
+      "description": "A pair that uniquely identifies the operation."
+    }
+  },
+  {
+    "__docId__": 16,
+    "kind": "method",
+    "name": "incrementFrom",
+    "memberof": "lib/vvwe.js~VVwE",
+    "generator": false,
+    "async": false,
+    "static": false,
+    "longname": "lib/vvwe.js~VVwE#incrementFrom",
+    "access": null,
+    "description": "Increment from a remote operation.",
+    "lineNumber": 75,
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "Pair"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "ec",
+        "description": "The entry and clock of the received event to add\nsupposedly ready."
+      }
+    ]
+  },
+  {
+    "__docId__": 17,
+    "kind": "method",
+    "name": "isReady",
+    "memberof": "lib/vvwe.js~VVwE",
+    "generator": false,
+    "async": false,
+    "static": false,
+    "longname": "lib/vvwe.js~VVwE#isReady",
+    "access": null,
+    "description": "Check if the argument are causally ready regards to this vector.  ",
+    "lineNumber": 96,
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "Pair"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "ec",
+        "description": "The identifier, i.e., the site clock of the operation\nthat happened-before the current event."
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Boolean"
+      ],
+      "spread": false,
+      "description": "true if the event is ready, i.e. the identifier has\nalready been integrated to this vector; false otherwise."
+    }
+  },
+  {
+    "__docId__": 18,
+    "kind": "method",
+    "name": "isLower",
+    "memberof": "lib/vvwe.js~VVwE",
+    "generator": false,
+    "async": false,
+    "static": false,
+    "longname": "lib/vvwe.js~VVwE#isLower",
+    "access": null,
+    "description": "Check if the message contains information already delivered.",
+    "lineNumber": 109,
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "Pair"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "ec",
+        "description": "the site clock to check."
+      }
+    ],
+    "return": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 19,
+    "kind": "method",
+    "name": "merge",
+    "memberof": "lib/vvwe.js~VVwE",
+    "generator": false,
+    "async": false,
+    "static": false,
+    "longname": "lib/vvwe.js~VVwE#merge",
+    "access": null,
+    "description": "Merges the version vector in argument with this.",
+    "lineNumber": 117,
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "VVwE"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "other",
+        "description": "the other version vector to merge with."
+      }
+    ]
+  },
+  {
+    "__docId__": 20,
+    "kind": "file",
+    "name": "lib/vvweentry.js",
+    "content": "'use strict';\n\n/**\n *  Create an entry of the version vector with exceptions containing the index\n *  of the entry, the value v that creates a contiguous interval from 0 to v,\n *  an array of integers that contains the operations lower to v that have not\n *  been received yet.\n */\nclass VVwEEntry {\n    /**\n     * @param {Object} e The entry in the interval version vector.\n     */\n    constructor (e) {\n        this.e = e;   \n        this.v = 0;\n        this.x = [];\n    };\n\n    /**\n     * Increment the local counter.\n     */\n    increment () {\n        this.v += 1;\n    };\n\n    /**\n     * Increment from a remote operation.\n     * @param {Number} c the counter of the operation to add to this.\n     */\n    incrementFrom (c) {\n        // #1 check if the counter is included in the exceptions\n        if (c < this.v){\n            const index = this.x.indexOf(c);\n            if (index >= 0) { // the exception is found\n                this.x.splice(index, 1);\n            };\n        };\n        // #2 if the value is +1 compared to the current value of the vector\n        if (c === (this.v + 1)) {\n            this.v += 1;\n        };\n        // #3 otherwise exceptions are made\n        if (c > (this.v + 1)) {\n            for (let i = (this.v + 1); i < c; ++i){\n                this.x.push(i);\n            };\n            this.v = c;\n        };\n    };\n\n    /**\n     * Comparison function between two VVwE entries.\n     * @param {VVwEEntry} a The first element.\n     * @param {VVwEEntry} b The second element.\n     * @return -1 if a < b, 1 if a > b, 0 otherwise\n     */\n    static comparator (a, b) {\n        const aEntry = (a.e) || a;\n        const bEntry = (b.e) || b;\n        if (aEntry < bEntry) { return -1; };\n        if (aEntry > bEntry){ return  1; };\n        return 0;\n    };\n\n};\n\nmodule.exports = VVwEEntry;\n",
+    "static": true,
+    "longname": "lib/vvweentry.js",
+    "access": null,
+    "description": null,
+    "lineNumber": 1
+  },
+  {
+    "__docId__": 21,
+    "kind": "class",
+    "name": "VVwEEntry",
+    "memberof": "lib/vvweentry.js",
+    "static": true,
+    "longname": "lib/vvweentry.js~VVwEEntry",
+    "access": null,
+    "export": true,
+    "importPath": "version-vector-with-exceptions/lib/vvweentry.js",
+    "importStyle": "VVwEEntry",
+    "description": " Create an entry of the version vector with exceptions containing the index\n of the entry, the value v that creates a contiguous interval from 0 to v,\n an array of integers that contains the operations lower to v that have not\n been received yet.",
+    "lineNumber": 9,
+    "interface": false
+  },
+  {
+    "__docId__": 22,
+    "kind": "constructor",
+    "name": "constructor",
+    "memberof": "lib/vvweentry.js~VVwEEntry",
+    "generator": false,
+    "async": false,
+    "static": false,
+    "longname": "lib/vvweentry.js~VVwEEntry#constructor",
+    "access": null,
+    "description": "",
+    "lineNumber": 13,
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "Object"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "e",
+        "description": "The entry in the interval version vector."
+      }
+    ]
+  },
+  {
+    "__docId__": 23,
+    "kind": "member",
+    "name": "e",
+    "memberof": "lib/vvweentry.js~VVwEEntry",
+    "static": false,
+    "longname": "lib/vvweentry.js~VVwEEntry#e",
+    "access": null,
+    "description": null,
+    "lineNumber": 14,
+    "undocument": true,
+    "unknown": [
+      {
+        "tagName": "@_undocument",
+        "tagValue": ""
+      }
+    ],
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 24,
+    "kind": "member",
+    "name": "v",
+    "memberof": "lib/vvweentry.js~VVwEEntry",
+    "static": false,
+    "longname": "lib/vvweentry.js~VVwEEntry#v",
+    "access": null,
+    "description": null,
+    "lineNumber": 15,
+    "undocument": true,
+    "unknown": [
+      {
+        "tagName": "@_undocument",
+        "tagValue": ""
+      }
+    ],
+    "type": {
+      "types": [
+        "number"
+      ]
+    }
+  },
+  {
+    "__docId__": 25,
+    "kind": "member",
+    "name": "x",
+    "memberof": "lib/vvweentry.js~VVwEEntry",
+    "static": false,
+    "longname": "lib/vvweentry.js~VVwEEntry#x",
+    "access": null,
+    "description": null,
+    "lineNumber": 16,
+    "undocument": true,
+    "unknown": [
+      {
+        "tagName": "@_undocument",
+        "tagValue": ""
+      }
+    ],
+    "type": {
+      "types": [
+        "*[]"
+      ]
+    }
+  },
+  {
+    "__docId__": 26,
+    "kind": "method",
+    "name": "increment",
+    "memberof": "lib/vvweentry.js~VVwEEntry",
+    "generator": false,
+    "async": false,
+    "static": false,
+    "longname": "lib/vvweentry.js~VVwEEntry#increment",
+    "access": null,
+    "description": "Increment the local counter.",
+    "lineNumber": 22,
+    "params": []
+  },
+  {
+    "__docId__": 27,
+    "kind": "member",
+    "name": "v",
+    "memberof": "lib/vvweentry.js~VVwEEntry",
+    "static": false,
+    "longname": "lib/vvweentry.js~VVwEEntry#v",
+    "access": null,
+    "description": null,
+    "lineNumber": 23,
+    "undocument": true,
+    "unknown": [
+      {
+        "tagName": "@_undocument",
+        "tagValue": ""
+      }
+    ],
+    "type": {
+      "types": [
+        "number"
+      ]
+    }
+  },
+  {
+    "__docId__": 28,
+    "kind": "method",
+    "name": "incrementFrom",
+    "memberof": "lib/vvweentry.js~VVwEEntry",
+    "generator": false,
+    "async": false,
+    "static": false,
+    "longname": "lib/vvweentry.js~VVwEEntry#incrementFrom",
+    "access": null,
+    "description": "Increment from a remote operation.",
+    "lineNumber": 30,
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "Number"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "c",
+        "description": "the counter of the operation to add to this."
+      }
+    ]
+  },
+  {
+    "__docId__": 29,
+    "kind": "member",
+    "name": "v",
+    "memberof": "lib/vvweentry.js~VVwEEntry",
+    "static": false,
+    "longname": "lib/vvweentry.js~VVwEEntry#v",
+    "access": null,
+    "description": null,
+    "lineNumber": 40,
+    "undocument": true,
+    "unknown": [
+      {
+        "tagName": "@_undocument",
+        "tagValue": ""
+      }
+    ],
+    "type": {
+      "types": [
+        "number"
+      ]
+    }
+  },
+  {
+    "__docId__": 30,
+    "kind": "member",
+    "name": "v",
+    "memberof": "lib/vvweentry.js~VVwEEntry",
+    "static": false,
+    "longname": "lib/vvweentry.js~VVwEEntry#v",
+    "access": null,
+    "description": null,
+    "lineNumber": 47,
+    "undocument": true,
+    "unknown": [
+      {
+        "tagName": "@_undocument",
+        "tagValue": ""
+      }
+    ],
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 31,
+    "kind": "method",
+    "name": "comparator",
+    "memberof": "lib/vvweentry.js~VVwEEntry",
+    "generator": false,
+    "async": false,
+    "static": true,
+    "longname": "lib/vvweentry.js~VVwEEntry.comparator",
+    "access": null,
+    "description": "Comparison function between two VVwE entries.",
+    "lineNumber": 57,
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "VVwEEntry"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "a",
+        "description": "The first element."
+      },
+      {
+        "nullable": null,
+        "types": [
+          "VVwEEntry"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "b",
+        "description": "The second element."
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "*"
+      ],
+      "spread": false,
+      "description": "1 if a < b, 1 if a > b, 0 otherwise"
+    }
+  },
+  {
+    "__docId__": 33,
+    "kind": "external",
+    "name": "Infinity",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Infinity",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Infinity",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 34,
+    "kind": "external",
+    "name": "NaN",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/NaN",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~NaN",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 35,
+    "kind": "external",
+    "name": "undefined",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/undefined",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~undefined",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 36,
+    "kind": "external",
+    "name": "null",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~null",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 37,
+    "kind": "external",
+    "name": "Object",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Object",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 38,
+    "kind": "external",
+    "name": "object",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~object",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 39,
+    "kind": "external",
+    "name": "Function",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Function",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 40,
+    "kind": "external",
+    "name": "function",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~function",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 41,
+    "kind": "external",
+    "name": "Boolean",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Boolean",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 42,
+    "kind": "external",
+    "name": "boolean",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~boolean",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 43,
+    "kind": "external",
+    "name": "Symbol",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Symbol",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 44,
+    "kind": "external",
+    "name": "Error",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Error",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 45,
+    "kind": "external",
+    "name": "EvalError",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/EvalError",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~EvalError",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 46,
+    "kind": "external",
+    "name": "InternalError",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/InternalError",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~InternalError",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 47,
+    "kind": "external",
+    "name": "RangeError",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RangeError",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~RangeError",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 48,
+    "kind": "external",
+    "name": "ReferenceError",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ReferenceError",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~ReferenceError",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 49,
+    "kind": "external",
+    "name": "SyntaxError",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/SyntaxError",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~SyntaxError",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 50,
+    "kind": "external",
+    "name": "TypeError",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/TypeError",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~TypeError",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 51,
+    "kind": "external",
+    "name": "URIError",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/URIError",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~URIError",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 52,
+    "kind": "external",
+    "name": "Number",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Number",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 53,
+    "kind": "external",
+    "name": "number",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~number",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 54,
+    "kind": "external",
+    "name": "Date",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Date",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 55,
+    "kind": "external",
+    "name": "String",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~String",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 56,
+    "kind": "external",
+    "name": "string",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~string",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 57,
+    "kind": "external",
+    "name": "RegExp",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~RegExp",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 58,
+    "kind": "external",
+    "name": "Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Array",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 59,
+    "kind": "external",
+    "name": "Int8Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Int8Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Int8Array",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 60,
+    "kind": "external",
+    "name": "Uint8Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Uint8Array",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 61,
+    "kind": "external",
+    "name": "Uint8ClampedArray",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8ClampedArray",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Uint8ClampedArray",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 62,
+    "kind": "external",
+    "name": "Int16Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Int16Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Int16Array",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 63,
+    "kind": "external",
+    "name": "Uint16Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint16Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Uint16Array",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 64,
+    "kind": "external",
+    "name": "Int32Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Int32Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Int32Array",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 65,
+    "kind": "external",
+    "name": "Uint32Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint32Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Uint32Array",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 66,
+    "kind": "external",
+    "name": "Float32Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Float32Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Float32Array",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 67,
+    "kind": "external",
+    "name": "Float64Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Float64Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Float64Array",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 68,
+    "kind": "external",
+    "name": "Map",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Map",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 69,
+    "kind": "external",
+    "name": "Set",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Set",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 70,
+    "kind": "external",
+    "name": "WeakMap",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WeakMap",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~WeakMap",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 71,
+    "kind": "external",
+    "name": "WeakSet",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WeakSet",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~WeakSet",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 72,
+    "kind": "external",
+    "name": "ArrayBuffer",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~ArrayBuffer",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 73,
+    "kind": "external",
+    "name": "DataView",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/DataView",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~DataView",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 74,
+    "kind": "external",
+    "name": "JSON",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~JSON",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 75,
+    "kind": "external",
+    "name": "Promise",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Promise",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 76,
+    "kind": "external",
+    "name": "Generator",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Generator",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Generator",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 77,
+    "kind": "external",
+    "name": "GeneratorFunction",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/GeneratorFunction",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~GeneratorFunction",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 78,
+    "kind": "external",
+    "name": "Reflect",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Reflect",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Reflect",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 79,
+    "kind": "external",
+    "name": "Proxy",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Proxy",
+    "access": null,
+    "description": "",
+    "lineNumber": 193,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 81,
+    "kind": "external",
+    "name": "CanvasRenderingContext2D",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D",
+    "memberof": "BuiltinExternal/WebAPIExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/WebAPIExternal.js~CanvasRenderingContext2D",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 82,
+    "kind": "external",
+    "name": "DocumentFragment",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/API/DocumentFragment",
+    "memberof": "BuiltinExternal/WebAPIExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/WebAPIExternal.js~DocumentFragment",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 83,
+    "kind": "external",
+    "name": "Element",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/API/Element",
+    "memberof": "BuiltinExternal/WebAPIExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/WebAPIExternal.js~Element",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 84,
+    "kind": "external",
+    "name": "Event",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/API/Event",
+    "memberof": "BuiltinExternal/WebAPIExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/WebAPIExternal.js~Event",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 85,
+    "kind": "external",
+    "name": "Node",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/API/Node",
+    "memberof": "BuiltinExternal/WebAPIExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/WebAPIExternal.js~Node",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 86,
+    "kind": "external",
+    "name": "NodeList",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/API/NodeList",
+    "memberof": "BuiltinExternal/WebAPIExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/WebAPIExternal.js~NodeList",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 87,
+    "kind": "external",
+    "name": "XMLHttpRequest",
+    "externalLink": "https://developer.mozilla.org/en/docs/Web/API/XMLHttpRequest",
+    "memberof": "BuiltinExternal/WebAPIExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/WebAPIExternal.js~XMLHttpRequest",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 88,
+    "kind": "external",
+    "name": "AudioContext",
+    "externalLink": "https://developer.mozilla.org/en/docs/Web/API/AudioContext",
+    "memberof": "BuiltinExternal/WebAPIExternal.js",
+    "static": true,
+    "longname": "BuiltinExternal/WebAPIExternal.js~AudioContext",
+    "access": null,
+    "description": "",
+    "lineNumber": 34,
+    "builtinExternal": true
+  }
+]

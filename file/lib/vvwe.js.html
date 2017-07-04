@@ -1,8 +1,50 @@
-'use strict';
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <base data-ice="baseUrl" href="../../">
+  <title data-ice="title">lib/vvwe.js | version-vector-with-exceptions API Document</title>
+  <link type="text/css" rel="stylesheet" href="css/style.css">
+  <link type="text/css" rel="stylesheet" href="css/prettify-tomorrow.css">
+  <script src="script/prettify/prettify.js"></script>
+  
+  
+  <script src="script/manual.js"></script>
+</head>
+<body class="layout-container" data-ice="rootContainer">
 
-const SortedArray = require('sorted-cmp-array');
-const VVwEEntry = require('./vvweentry.js');
-const Pair = require('./pair.js');
+<header>
+  <a href="./">Home</a>
+  
+  <a href="identifiers.html">Reference</a>
+  <a href="source.html">Source</a>
+  
+  <a data-ice="repoURL" href="https://github.com/chat-wane/version-vector-with-exceptions.git" class="repo-url-github">Repository</a>
+  <div class="search-box">
+  <span>
+    <img src="./image/search.png">
+    <span class="search-input-edge"></span><input class="search-input"><span class="search-input-edge"></span>
+  </span>
+    <ul class="search-result"></ul>
+  </div>
+</header>
+
+<nav class="navigation" data-ice="nav"><div>
+  <ul>
+    
+  <li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/lib/pair.js~Pair.html">Pair</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/lib/vvwe.js~VVwE.html">VVwE</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/lib/vvweentry.js~VVwEEntry.html">VVwEEntry</a></span></span></li>
+</ul>
+</div>
+</nav>
+
+<div class="content" data-ice="content"><h1 data-ice="title">lib/vvwe.js</h1>
+<pre class="source-code line-number raw-source-code"><code class="prettyprint linenums" data-ice="content">&apos;use strict&apos;;
+
+const SortedArray = require(&apos;sorted-cmp-array&apos;);
+const VVwEEntry = require(&apos;./vvweentry.js&apos;);
+const Pair = require(&apos;./pair.js&apos;);
 
 /**
  * Version vector with exceptions.
@@ -24,10 +66,10 @@ class VVwE {
      */
     clone () {
         const cloneVVwE = new VVwE(this.local.e);
-        for (let i = 0; i < this.vector.arr.length; ++i) {
+        for (let i = 0; i &lt; this.vector.arr.length; ++i) {
             cloneVVwE.vector.arr[i] = new VVwEEntry(this.vector.arr[i].e);
             cloneVVwE.vector.arr[i].v = this.vector.arr[i].v;
-            for (let j = 0; j < this.vector.arr[i].x.length; ++j) {
+            for (let j = 0; j &lt; this.vector.arr[i].x.length; ++j) {
                 cloneVVwE.vector.arr[i].x.push(this.vector.arr[i].x[j]);
             };
             if (cloneVVwE.vector.arr[i].e === this.local.e) {
@@ -44,10 +86,10 @@ class VVwE {
      */
     static fromJSON (object) {
         const vvwe = new VVwE(object.local.e);
-        for (let i = 0; i < object.vector.arr.length; ++i) {
+        for (let i = 0; i &lt; object.vector.arr.length; ++i) {
             vvwe.vector.arr[i] = new VVwEEntry(object.vector.arr[i].e);
             vvwe.vector.arr[i].v = object.vector.arr[i].v;
-            for (let j = 0; j < object.vector.arr[i].x.length; ++j) {
+            for (let j = 0; j &lt; object.vector.arr[i].x.length; ++j) {
                 vvwe.vector.arr[i].x.push(object.vector.arr[i].x[j]);
             };
             if (object.vector.arr[i].e === object.local.e) {
@@ -75,7 +117,7 @@ class VVwE {
     incrementFrom (ec) {
         // #0 find the entry within the array of VVwEntries
         const index = this.vector.indexOf(ec.e);
-        if (index < 0) {
+        if (index &lt; 0) {
             // #1 if the entry does not exist, initialize and increment
             this.vector.insert(new VVwEEntry(ec.e));
             this.vector.arr[this.vector.indexOf(ec.e)].incrementFrom(ec.c);
@@ -95,11 +137,11 @@ class VVwE {
      */
     isReady (ec) {
         // #0 no ec, automatically ready
-        if (typeof ec === 'undefined' || ec === null) { return true; };
+        if (typeof ec === &apos;undefined&apos; || ec === null) { return true; };
         // #1 otherwise, check in the vector and exceptions
         const index = this.vector.indexOf(ec.e);
-        return index >= 0 && ec.c <= this.vector.arr[index].v &&
-            this.vector.arr[index].x.indexOf(ec.c) < 0;
+        return index &gt;= 0 &amp;&amp; ec.c &lt;= this.vector.arr[index].v &amp;&amp;
+            this.vector.arr[index].x.indexOf(ec.c) &lt; 0;
     };
 
     /**
@@ -107,7 +149,7 @@ class VVwE {
      * @param {Pair} ec the site clock to check.
      */
     isLower (ec) {
-        return typeof ec !== 'undefined' && ec !== null && this.isReady(ec);
+        return typeof ec !== &apos;undefined&apos; &amp;&amp; ec !== null &amp;&amp; this.isReady(ec);
     };
     
     /**
@@ -115,14 +157,14 @@ class VVwE {
      * @param {VVwE} other the other version vector to merge with.
      */
     merge (other) {
-        for (let i = 0; i < other.vector.arr.length; ++i) {
+        for (let i = 0; i &lt; other.vector.arr.length; ++i) {
             let entry = other.vector.arr[i];
             let index = this.vector.indexOf(entry);
-            if (index < 0) {
+            if (index &lt; 0) {
                 // #1 entry does not exist, fully copy it
                 let newEntry = new VVwEEntry(entry.e);
                 newEntry.v = entry.v;
-                for (let j = 0; j < entry.x.length; ++j){
+                for (let j = 0; j &lt; entry.x.length; ++j){
                     newEntry.x.push(entry.x[j]);
                 };
                 this.vector.insert(newEntry);
@@ -131,9 +173,9 @@ class VVwE {
                 let currEntry = this.vector.arr[index];
                 // #2A remove the exception from our vector
                 let j = 0;
-                while (j < currEntry.x.length) {
-                    if (currEntry.x[j]<entry.v &&
-                        entry.x.indexOf(currEntry.x[j]) < 0) {
+                while (j &lt; currEntry.x.length) {
+                    if (currEntry.x[j]&lt;entry.v &amp;&amp;
+                        entry.x.indexOf(currEntry.x[j]) &lt; 0) {
                         currEntry.x.splice(j, 1);
                     } else {
                         ++j;
@@ -141,9 +183,9 @@ class VVwE {
                 };
                 // #2B add the new exceptions
                 j = 0;
-                while (j < entry.x.length) {
-                    if (entry.x[j] > currEntry.v &&
-                        currEntry.x.indexOf(entry.x[j]) < 0) {
+                while (j &lt; entry.x.length) {
+                    if (entry.x[j] &gt; currEntry.v &amp;&amp;
+                        currEntry.x.indexOf(entry.x[j]) &lt; 0) {
                         currEntry.x.push(entry.x[j]);
                     };
                     ++j;
@@ -157,3 +199,20 @@ class VVwE {
 
 module.exports = VVwE;
 
+</code></pre>
+
+</div>
+
+<footer class="footer">
+  Generated by <a href="https://esdoc.org">ESDoc<span data-ice="esdocVersion">(0.5.2)</span><img src="./image/esdoc-logo-mini-black.png"></a>
+</footer>
+
+<script src="script/search_index.js"></script>
+<script src="script/search.js"></script>
+<script src="script/pretty-print.js"></script>
+<script src="script/inherited-summary.js"></script>
+<script src="script/test-summary.js"></script>
+<script src="script/inner-link.js"></script>
+<script src="script/patch-for-local.js"></script>
+</body>
+</html>
