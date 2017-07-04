@@ -16,7 +16,7 @@ git init
 git config user.name "Chat-Wane"
 git config user.email "grumpy.chat.wane@gmail.com"
 
-git remote add upstream "https://$GH_TOKEN@github.com/Chat-Wane/version-vector-with-exceptions.git"
+git remote add upstream "https://$GH_TOKEN@github.com/chat-wane/version-vector-with-exceptions.git"
 git fetch upstream
 git reset upstream/gh-pages
 
